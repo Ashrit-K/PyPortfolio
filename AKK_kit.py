@@ -10,8 +10,7 @@ import scipy
 
 
 def get_resample(returns, period='M'):
-    """ Returns the last monthly resampled data by default
-    """
+
     resampled_r = returns.resample(period).last()
     return resampled_r
 
@@ -19,11 +18,6 @@ def get_resample(returns, period='M'):
 
 
 def get_drawdown(return_series: pd.Series):
-    """
-    return series --> dollar_index, prev_peak, drawdown
-
-    """
-    import pandas as pd
     """ Takes a pandas return series and spits out a pd
     series containing dollar index, cumulative peaks & drawdown pct
     Returns drawdown pct as a negative value
