@@ -81,5 +81,5 @@ def semi_deviation(return_series, periodicity):
         raise ValueError('Invalid periodicity')
 
     negative_mask = return_series < 0
-    semi_deviation = return_series[negative_mask].std() * scale_factor
-    return semi_deviation
+    semi_deviation_exit = return_series[negative_mask].std() * scale_factor
+    return semi_deviation_exit
