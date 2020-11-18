@@ -38,6 +38,85 @@ def max_drawdown(return_series: pd.Series, start_value=1):
     })
 
 
+def volatilty_scaling_helper(return_periodicity: str):
+    """Checks for the periodicity of the returns and returns the appropriate
+    scale factor for volatility. Annual volatility is calculated as 
+    the product of volatility over time t and sqrt t.
+
+    Parameters
+    ----------
+    return_periodicity : str
+        The periodicity of the returns. 
+        Supported periodicity: 'D' (t=252), 'W' (t=52),
+                                 'M' (t=12), 'Y' (t=1)
+
+
+    Returns
+    -------
+    float
+        Scale factor for computing annual volatility from volatility
+        computed for time periods < 1 year
+
+    Raises
+    ------
+    ValueError
+        If the return_periodicity is not in the list of specified periods
+    """
+    if return_periodicity == 'D':
+        scale_factor = math.sqrt(252)
+    elif return_periodicity == 'W':
+        scale_factor = math.sqrt(52)
+    elif return_periodicity == 'M':
+        scale_factor = math.sqrt(12)
+    elif return_periodicity == 'Y':
+        scale_factor = 1
+    else:
+        raise ValueError('Invalid periodicity')
+
+    return scale_factor
+
+
+def return_annualizing_helper(return_periodicity: str, num_periods: float):
+    """Returns the appropriate power term to raise the (1+r) term to compute
+    annulized returns. 
+
+    Usage: invoke this function to compute the appropriate exponent for the
+    given (1+periodic_return) term.
+
+    Parameters
+    ----------
+    rreturn_periodicity : str
+        The periodicity of the returns. 
+        Supported periodicity: 'D' (t=252), 'W' (t=52),
+                                 'M' (t=12), 'Y' (t=1)
+    num_periods : float
+        Total number of periodic observations in the return series for an asset or portfolio
+
+    Returns
+    -------
+    float   
+        Returns the appropriate exponent for the (1+periodic_return) term.
+
+    Raises
+    ------
+    ValueError
+        If the return_periodicity is not in the list of specified periods
+    """
+
+    if return_periodicity == 'D':
+        scale_factor = 252/num_periods
+    elif return_periodicity == 'W':
+        scale_factor = 52/num_periods
+    elif return_periodicity == 'M':
+        scale_factor = 12/num_periods
+    elif return_periodicity == 'Y':
+        scale_factor = 1/num_periods
+    else:
+        raise ValueError('Invalid periodicity')
+
+    return scale_factor
+
+
 def semi_deviation(return_series, periodicity):
     """Computes the anualized semi-deviation for a given return series.
        Semi-deviation is calculated as the standard deviation of returns
@@ -48,18 +127,15 @@ def semi_deviation(return_series, periodicity):
        return_series : pd.Series, pd.Dataframe
            Periodic returns for an asset or portfolio
        periodicity : str
-           Periodicity of the returns. This will be used to compute annualized
-           semi-deviation.
+           Periodicity of the returns. 
+           Supported periodicity: 'D' (t=252), 'W' (t=52),
+                                     'M' (t=12), 'Y' (t=1)
 
        Returns
        -------
        float
            Annulized semi-devition of the return series.
 
-       Raises
-       ------
-       ValueError
-           If periodicity is not 'M' or 'W' or 'D' or 'Y'.
        """
 
     # if the function is called on a pd.Dataframe with returns,
@@ -69,16 +145,8 @@ def semi_deviation(return_series, periodicity):
     if isinstance(return_series, pd.DataFrame):
         return return_series.aggregate(semi_deviation)
 
-    if periodicity == 'D':
-        scale_factor = math.sqrt(252)
-    elif periodicity == 'W':
-        scale_factor = math.sqrt(52)
-    elif periodicity == 'M':
-        scale_factor = math.sqrt(12)
-    elif periodicity == 'Y':
-        scale_factor = 1
-    else:
-        raise ValueError('Invalid periodicity')
+    # invoke helper func to get scaling factor
+    scale_factor = volatilty_scaling_helper(return_periodicity=periodicity)
 
     negative_mask = return_series < 0
     semi_deviation_exit = return_series[negative_mask].std() * scale_factor
