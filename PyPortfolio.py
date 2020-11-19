@@ -13,7 +13,7 @@ def max_drawdown(return_series: pd.Series, start_value=1):
     maximum of the dollar index untill time t expressed as a percentage of the
     cumulative maximum of the dollar index untill time t
 
-    see here for more: https://en.wikipedia.org/wiki/Drawdown_(economics)
+    for more: https://en.wikipedia.org/wiki/Drawdown_(economics)
 
     Parameters
     ----------
@@ -151,3 +151,41 @@ def semi_deviation(return_series, periodicity):
     negative_mask = return_series < 0
     semi_deviation_exit = return_series[negative_mask].std() * scale_factor
     return semi_deviation_exit
+
+
+def annualized_volatility(return_series, periodicity):
+    periodic_vol = return_series.std()
+    scale_factor = volatilty_scaling_helper(return_periodicity=periodicity)
+    return periodic_vol * scale_factor
+
+
+def annualized_return(return_series, periodicity):
+    compunded_ret = (1+return_series).cumprod()
+    annualizing_exponent = return_annualizing_helper(return_periodicity=periodicity,
+                                                     num_periods=return_series.shape[0])
+
+    return (compunded_ret ** annualizing_exponent) - 1
+
+
+def sharpe_ratio(return_series, periodicity, risk_free_rates):
+    try:  # do i need a try block?
+        excess_returns = return_series - risk_free_rates
+        annualized_excess_returns = annualized_return(return_series=excess_returns,
+                                                      periodicity=periodicity)
+        annual_vol = annualized_volatility(return_series=return_series,
+                                           periodicity=periodicity)
+
+        return annualized_excess_returns/annual_vol
+
+
+def sortino_ratio(return_series, periodicity, risk_free_rates):
+    excess_returns = return_series - risk_free_rates
+    annualized_excess_returns = annualized_return(return_series=excess_returns,
+                                                  periodicity=periodicity)
+    semi_dev = semi_deviation(return_series=return_series,
+                              periodicity=periodicity)
+    return annualized_excess_returns/semi_dev
+
+
+def calmar_ratio(return_series, periodicity, risk_free_rates):
+    pass
