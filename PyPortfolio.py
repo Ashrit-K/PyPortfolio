@@ -1,10 +1,11 @@
+import scipy
+import pandas_datareader
+import pandas as pd
+import numpy as np
 import datetime as dt
 import math
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import pandas_datareader
-import scipy
+plt.style.use('seaborn')
 
 
 def max_drawdown(return_series: pd.Series, start_value=1):
