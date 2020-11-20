@@ -1,4 +1,7 @@
 __pycache__
+.ipynb_checkpoints/
+basic-usage-of-Tiingo-with-pandas.ipynb
+pdr_yfinance.ipynb
 archive_dir/
 EDHEC_1/
 EDHEC_2/

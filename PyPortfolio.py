@@ -34,7 +34,7 @@ def max_drawdown(return_series: pd.Series, start_value=1):
     drawdown = (dollar_index - prev_peak)/prev_peak
     exit_df = pd.DataFrame({'dollar_index': dollar_index,
                             'cumulative_max': prev_peak,
-                            'max_drawdown': drawdown
+                            'drawdown': drawdown
                             })
     return exit_df
 
