@@ -31,11 +31,11 @@ def max_drawdown(return_series: pd.Series, start_value=1):
     dollar_index = start_value * (1+return_series).cumprod()
     prev_peak = dollar_index.cummax()
     drawdown = (dollar_index - prev_peak)/prev_peak
-    return pd.DataFrame({
-        'dollar_index': dollar_index,
-        'cumulative_max': prev_peak,
-        'max_drawdown': drawdown
-    })
+    exit_df = pd.DataFrame({'dollar_index': dollar_index,
+                            'cumulative_max': prev_peak,
+                            'max_drawdown': drawdown
+                            })
+    return exit_df
 
 
 def volatilty_scaling_helper(return_periodicity: str):
