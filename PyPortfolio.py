@@ -1,4 +1,4 @@
-import scipy
+import scipy.stats
 import pandas_datareader
 import pandas as pd
 import numpy as np
@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 plt.style.use('seaborn')
 
 
-def max_drawdown(return_series: pd.Series, start_value=1):
+def Drawdown(return_series: pd.Series, start_value=1):
     """Computes the maximum drawdown for a given return series. Maximum drawdown for a
     time period t is the difference between the value of dollar index and cumulative
     maximum of the dollar index untill time t expressed as a percentage of the
@@ -31,23 +31,27 @@ def max_drawdown(return_series: pd.Series, start_value=1):
 
     dollar_index = start_value * (1+return_series).cumprod()
     prev_peak = dollar_index.cummax()
-    drawdown = (dollar_index - prev_peak)/prev_peak
-    exit_df = pd.DataFrame({'dollar_index': dollar_index,
-                            'cumulative_max': prev_peak,
-                            'drawdown': drawdown
-                            })
-    return exit_df
+    drawdown_internal = (dollar_index - prev_peak)/prev_peak
+
+    # To Do:
+    # handle dataframes
+
+    drawdown_df = pd.DataFrame({'dollar_index': dollar_index,
+                                'cumulative_max': prev_peak,
+                                'drawdown': drawdown_internal
+                                })
+    return drawdown_df
 
 
 def volatilty_scaling_helper(return_periodicity: str):
     """Checks for the periodicity of the returns and returns the appropriate
-    scale factor for volatility. Annual volatility is calculated as 
+    scale factor for volatility. Annual volatility is calculated as
     the product of volatility over time t and sqrt t.
 
     Parameters
     ----------
     return_periodicity : str
-        The periodicity of the returns. 
+        The periodicity of the returns.
         Supported periodicity: 'D' (t=252), 'W' (t=52),
                                  'M' (t=12), 'Y' (t=1)
 
@@ -79,7 +83,7 @@ def volatilty_scaling_helper(return_periodicity: str):
 
 def return_annualizing_helper(return_periodicity: str, num_periods: float):
     """Returns the appropriate power term to raise the (1+r) term to compute
-    annulized returns. 
+    annulized returns.
 
     Usage: invoke this function to compute the appropriate exponent for the
     given (1+periodic_return) term.
@@ -87,7 +91,7 @@ def return_annualizing_helper(return_periodicity: str, num_periods: float):
     Parameters
     ----------
     rreturn_periodicity : str
-        The periodicity of the returns. 
+        The periodicity of the returns.
         Supported periodicity: 'D' (t=252), 'W' (t=52),
                                  'M' (t=12), 'Y' (t=1)
     num_periods : float
@@ -95,7 +99,7 @@ def return_annualizing_helper(return_periodicity: str, num_periods: float):
 
     Returns
     -------
-    float   
+    float
         Returns the appropriate exponent for the (1+periodic_return) term.
 
     Raises
@@ -128,7 +132,7 @@ def semi_deviation(return_series, periodicity):
        return_series : pd.Series, pd.Dataframe
            Periodic returns for an asset or portfolio
        periodicity : str
-           Periodicity of the returns. 
+           Periodicity of the returns.
            Supported periodicity: 'D' (t=252), 'W' (t=52),
                                      'M' (t=12), 'Y' (t=1)
 
@@ -161,27 +165,32 @@ def annualized_volatility(return_series, periodicity):
 
 
 def annualized_return(return_series, periodicity):
-    compunded_ret = (1+return_series).cumprod()
+    compunded_ret = (1+return_series).prod()
     annualizing_exponent = return_annualizing_helper(return_periodicity=periodicity,
                                                      num_periods=return_series.shape[0])
 
     return (compunded_ret ** annualizing_exponent) - 1
 
 
-def sharpe_ratio(return_series, periodicity, risk_free_rates):
-    try:  # do i need a try block?
-        excess_returns = return_series - risk_free_rates
-        annualized_excess_returns = annualized_return(return_series=excess_returns,
-                                                      periodicity=periodicity)
-        annual_vol = annualized_volatility(return_series=return_series,
-                                           periodicity=periodicity)
+def sharpe_ratio(return_series, periodicity, risk_free_rates=None):
 
-        return annualized_excess_returns/annual_vol
-    except:
-        pass
+    if risk_free_rates == None:
+        risk_free_rates = 0
+
+    excess_returns = return_series - risk_free_rates
+    annualized_excess_returns = annualized_return(return_series=excess_returns,
+                                                  periodicity=periodicity)
+    annual_vol = annualized_volatility(return_series=return_series,
+                                       periodicity=periodicity)
+
+    return annualized_excess_returns/annual_vol
 
 
-def sortino_ratio(return_series, periodicity, risk_free_rates):
+def sortino_ratio(return_series, periodicity, risk_free_rates=None):
+
+    if risk_free_rates == None:
+        risk_free_rates = 0
+
     excess_returns = return_series - risk_free_rates
     annualized_excess_returns = annualized_return(return_series=excess_returns,
                                                   periodicity=periodicity)
@@ -190,5 +199,23 @@ def sortino_ratio(return_series, periodicity, risk_free_rates):
     return annualized_excess_returns/semi_dev
 
 
-def calmar_ratio(return_series, periodicity, risk_free_rates):
+def calmar_ratio(return_series, periodicity, risk_free_rates=None):
+    pass
+
+
+def historic_VaR(return_series, level):
+    if isinstance(return_series, pd.DataFrame):
+        return return_series.aggregate(historic_VaR)
+
+    return -1 * return_series.quantile(level)
+
+
+def Gaussian_VaR(return_series, level):
+
+    return -1 * scipy.stats.norm.ppf(q=level,
+                                     loc=return_series.mean(),
+                                     scale=return_series.std())
+
+
+def conditional_VaR(return_series, periodicity, level):
     pass
