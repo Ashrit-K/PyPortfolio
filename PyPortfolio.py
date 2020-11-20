@@ -176,6 +176,8 @@ def sharpe_ratio(return_series, periodicity, risk_free_rates):
                                            periodicity=periodicity)
 
         return annualized_excess_returns/annual_vol
+    except:
+        pass
 
 
 def sortino_ratio(return_series, periodicity, risk_free_rates):
