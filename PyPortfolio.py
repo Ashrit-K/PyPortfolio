@@ -10,6 +10,10 @@ plt.style.use('seaborn')
 # todo define dollarindex function
 
 
+def dollar_index(return_series, start_value=1):
+    return start_value * (1+return_series).cumprod()
+
+
 def Drawdown(return_series: pd.Series, start_value=1):
     """Computes the maximum drawdown for a given return series. Maximum drawdown for a
     time period t is the difference between the value of dollar index and cumulative
@@ -31,18 +35,10 @@ def Drawdown(return_series: pd.Series, start_value=1):
         Dataframe with the dollar index, cumulative max in dollar index, and the max drawdown
     """
 
-    dollar_index = start_value * (1+return_series).cumprod()
-    prev_peak = dollar_index.cummax()
-    drawdown_internal = (dollar_index - prev_peak)/prev_peak
-
-    # To Do:
-    # handle dataframes
-
-    drawdown_df = pd.DataFrame({'dollar_index': dollar_index,
-                                'cumulative_max': prev_peak,
-                                'drawdown': drawdown_internal
-                                })
-    return drawdown_df
+    wealth_index = (dollar_index(return_series=return_series,
+                                 start_value=start_value))
+    prev_peak = wealth_index.cummax()
+    return (wealth_index - prev_peak)/prev_peak
 
 
 def volatilty_scaling_helper(return_periodicity: str):
@@ -149,16 +145,12 @@ def semi_deviation(return_series, periodicity):
     # a recursive call is made to the semi_deviation function
     # using the pandas aggragate method. For more on pandas aggregate see:
     # https://www.w3resource.com/pandas/dataframe/dataframe-aggregate.php
-    if isinstance(return_series, pd.DataFrame):
-        return return_series.aggregate(semi_deviation)
 
     # invoke helper func to get scaling factor
     scale_factor = volatilty_scaling_helper(return_periodicity=periodicity)
 
     negative_return_mask = return_series < 0
-    semi_deviation_exit = return_series[negative_return_mask].std() * \
-        scale_factor
-    return semi_deviation_exit
+    return return_series[negative_return_mask].std() * scale_factor
 
 
 def annualized_volatility(return_series, periodicity):
@@ -336,7 +328,7 @@ def Gaussian_VaR(return_series, level):
                                      scale=return_series.std()) '''
 
 
-def conditional_VaR(return_series, level, VaR_method):
+def conditional_VaR(return_series, level, VaR_method=None):
     """Computes the conditional VaR of the return series for the periodicity 
     with a probability of 'level' using the passed in VaR_method
 
@@ -351,11 +343,12 @@ def conditional_VaR(return_series, level, VaR_method):
         Valid options:
         - 'Guassian'
         - 'Historic' 
+        - 'None' : Returns a dataframe with conditional var estimated using the above 2 methods
 
 
     Returns
     -------
-    float
+    float, pd.Dataframe
         Average of the expected loss in the periodicity of the return series 
         with a probability greatear than or equal to 'level' (VaR)
     """
@@ -371,4 +364,16 @@ def conditional_VaR(return_series, level, VaR_method):
         bool_mask = return_series < -hist_var
         return -return_series[bool_mask].mean()
     else:
-        raise NameError('Invalid VaR Method')
+        print('Warning: VaR Method not provided or valid; returning pd.DataFrame with cVaR using Guassian & Historic method')
+        var_normal = Gaussian_VaR(return_series=return_series,
+                                  level=level)
+        bool_mask1 = return_series < -var_normal
+        normal = -return_series[bool_mask1].mean()
+
+        hist_var = historic_VaR(return_series=return_series,
+                                level=level)
+        bool_mask2 = return_series < -hist_var
+        hist = -return_series[bool_mask2].mean()
+
+        return pd.DataFrame({'Gaussian Conditional VaR': normal,
+                             'Historic Conditional VaR': hist})
