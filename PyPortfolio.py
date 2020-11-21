@@ -7,8 +7,6 @@ import math
 import matplotlib.pyplot as plt
 plt.style.use('seaborn')
 
-# todo define dollarindex function
-
 
 def dollar_index(return_series, start_value=1):
     return start_value * (1+return_series).cumprod()
@@ -364,7 +362,7 @@ def conditional_VaR(return_series, level, VaR_method=None):
         bool_mask = return_series < -hist_var
         return -return_series[bool_mask].mean()
     else:
-        print('Warning: VaR Method not provided or valid; returning pd.DataFrame with cVaR using Guassian & Historic method')
+        print('Warning: VaR Method not provided or not valid; returning pd.DataFrame with cVaR using Guassian & Historic method')
         var_normal = Gaussian_VaR(return_series=return_series,
                                   level=level)
         bool_mask1 = return_series < -var_normal
