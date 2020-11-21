@@ -1,4 +1,4 @@
-from PyPortfolio import *
+from CoreFunctions import *
 
 
 class RiskReturn():
