@@ -130,7 +130,13 @@ class RiskReturn():
         return self.dollar_index_startvalue
 
     def set_dollar_index_startvalue(self, startvalue):
+        temp = self.dollar_index_startvalue
         self.dollar_index_startvalue = startvalue
+        print('Start Value changed from to {} to {}'.format(temp, startvalue))
+        del temp
 
     def set_VaR_level(self, var_level):
+        temp = self.var_level
         self.var_level = var_level
+        print('VaR level changed from to {} to {}'.format(temp, var_level))
+        del temp

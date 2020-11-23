@@ -362,7 +362,7 @@ def conditional_VaR(return_series, level, VaR_method=None):
         bool_mask = return_series < -hist_var
         return -return_series[bool_mask].mean()
     else:
-        print('Warning: VaR Method not provided or not valid; returning pd.DataFrame with cVaR using Guassian & Historic method')
+        print('Warning:\nVaR Method not provided or not valid; returning pd.DataFrame with cVaR using Guassian & Historic method')
         var_normal = Gaussian_VaR(return_series=return_series,
                                   level=level)
         bool_mask1 = return_series < -var_normal
@@ -375,3 +375,13 @@ def conditional_VaR(return_series, level, VaR_method=None):
 
         return pd.DataFrame({'Gaussian Conditional VaR': normal,
                              'Historic Conditional VaR': hist})
+
+
+def portfolio_returns(return_series, weights: np.array):
+    pr = weights @ return_series.transpose()
+    return pr
+
+
+def portfolio_volatility(return_series, weights):
+    pvar = weights @ return_series.cov @ weights
+    return math.sqrt(pvar)
