@@ -1,7 +1,7 @@
 from CoreFunctions import *
 
 
-class RiskReturn():
+class RiskReturn(object):
     """RiskReturn is an object that needs a return series and the 
     periodicity of the return series to be initialized. 
 
@@ -36,6 +36,8 @@ class RiskReturn():
         self.RiskFreeRates = risk_free_rates
 
         self.dollar_index_startvalue = 1
+
+        # todo option to compute the dollar_index for a slice of time
         self.dollar_index = dollar_index(return_series=return_series,
                                          start_value=self.dollar_index_startvalue)
 
@@ -61,7 +63,7 @@ class RiskReturn():
                                           periodicity=self.periodicity,
                                           risk_free_rates=risk_free_rates)
 
-        self.var_level = 0.05
+        self.var_level = 0.1
 
         self.GaussianVaR = Gaussian_VaR(return_series=return_series,
                                         level=self.var_level)
@@ -69,8 +71,10 @@ class RiskReturn():
         self.HistoricVaR = historic_VaR(return_series=return_series,
                                         level=self.var_level)
 
-        self.ConditionalVaR = pd.DataFrame({'Historic Conditional VaR': self.HistoricVaR,
-                                            'Guassian Conditional VaR': self.GaussianVaR})
+        # todo index is set to 0 when passing scalars
+        self.ConditionalVaR = pd.DataFrame({'Historic Conditional VaR': [self.HistoricVaR],
+                                            'Guassian Conditional VaR': [self.GaussianVaR]},
+                                           index=None)
 
         self.ConditionalHistoricVaR = self.return_series[self.return_series < -
                                                          self.HistoricVaR].mean()
