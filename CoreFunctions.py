@@ -378,10 +378,42 @@ def conditional_VaR(return_series, level, VaR_method=None):
 
 
 def portfolio_returns(return_series, weights: np.array):
+    """Computes the periodic portfolio returns for a given return series and weights
+
+    Parameters
+    ----------
+    return_series : [type]
+        [description]
+    weights : np.array
+        Portfolio weights in the same as the returns are arranged for assets in the return_series
+
+    Returns
+    -------
+    pd.Series
+        Periodic portfolio returns
+    """
     pr = weights @ return_series.transpose()
     return pr
 
 
 def portfolio_volatility(return_series, weights):
-    pvar = weights @ return_series.cov @ weights
+    """Computes the periodic volatility of the portfolio with given weights and the historical covariance
+    matrix for the return_series 
+
+    Parameters
+    ----------
+    return_series : pd.Series, pd.DataFrame
+        [description]
+    weights : [type]
+        [description]
+
+    Returns
+    -------
+    float
+        periodic portfolio volatility. 
+        For the future clueless me: by periodic volatility I mean volatility for the return 
+        series over the periodicity of the passed in return series. i.e, if return_series is 
+        monthly, then the returned portfolio volatilty will be monthly.
+    """
+    pvar = weights.transpose() @ return_series.cov() @ weights
     return math.sqrt(pvar)
