@@ -22,3 +22,11 @@ class PyPortfolio(RiskReturn):
 
         self.portfolio_volatility = portfolio_volatility(return_series=self.return_series,
                                                          weights=self.weights)
+
+    def get_Portfolio_RiskReturn(self):
+        return self.portfolio_return
+
+    @classmethod
+    def Minimum_vol_weights(cls):
+
+        pass
