@@ -23,5 +23,12 @@ class PyPortfolio(RiskReturn):
         self.portfolio_volatility = portfolio_volatility(return_series=self.return_series,
                                                          weights=self.default_weights)
 
+        self.MeanVarianceOpt = EfficientFrontier(
+            return_series=self.get_return_series(), periodicity=self.periodicity)
+
+        self.efficientfrontier = self.MeanVarianceOpt[0]
+
+        self.efficientfrontierweights = self.MeanVarianceOpt[1]
+
     def get_Portfolio_RiskReturn(self):
         return self.portfolio_return
