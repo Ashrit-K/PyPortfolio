@@ -557,7 +557,7 @@ def EfficientFrontier(return_series, periodicity):
     # be a trade-off between vol and return
     target_return_vector = np.linspace(start=min_return,
                                        stop=max_return,
-                                       num=150)
+                                       num=30)
 
     # minimum_volatility_weights returns a tuple
     # index into the tuple to get the weights
