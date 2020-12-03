@@ -119,7 +119,7 @@ def return_annualizing_helper(return_periodicity: str, num_periods: float):
     return scale_factor
 
 
-def semi_deviation(return_series, periodicity):
+def semi_deviation(return_series, periodicity, direction=None):
     """Computes the anualized semi-deviation for a given return series.
        Semi-deviation is calculated as the standard deviation of returns
        that are less tha 0.
@@ -132,10 +132,17 @@ def semi_deviation(return_series, periodicity):
            Periodicity of the returns.
            Supported periodicity: 'D' (t=252), 'W' (t=52),
                                      'M' (t=12), 'Y' (t=1)
+       direction : str
+            valid options:
+            - 'up' : positive semi-deviation
+            - 'down' : negative semi-deviation
+            - 'None' : Default. Returns a pd.DataFrame with positive and negative
+                        semi-deviation
+
 
        Returns
        -------
-       float
+       float, pd.Dataframe
            Annulized semi-devition of the return series.
 
        """
@@ -148,8 +155,23 @@ def semi_deviation(return_series, periodicity):
     # invoke helper func to get scaling factor
     scale_factor = volatilty_scaling_helper(return_periodicity=periodicity)
 
-    negative_return_mask = return_series < 0
-    return return_series[negative_return_mask].std() * scale_factor
+    if direction == 'up':
+        return_mask = return_series > 0
+        return return_series[return_mask].std() * scale_factor
+
+    elif direction == 'down':
+        return_mask = return_series < 0
+        return return_series[return_mask].std() * scale_factor
+
+    else:
+        up_return_mask = return_series > 0
+        up = return_series[up_return_mask].std() * scale_factor
+
+        down_return_mask = return_series < 0
+        down = return_series[down_return_mask].std() * scale_factor
+
+        return pd.DataFrame({'Positive semi-deviation': [up],
+                             'Negative semi-deviation': [down]})
 
 
 def annualized_volatility(return_series, periodicity):
@@ -265,7 +287,8 @@ def sortino_ratio(return_series, periodicity, risk_free_rates=None):
     annualized_excess_returns = annualized_return(return_series=excess_returns,
                                                   periodicity=periodicity)
     semi_dev = semi_deviation(return_series=return_series,
-                              periodicity=periodicity)
+                              periodicity=periodicity,
+                              direction='down')
     return annualized_excess_returns/semi_dev
 
 
@@ -342,7 +365,8 @@ def conditional_VaR(return_series, level, VaR_method=None):
         Valid options:
         - 'Guassian'
         - 'Historic'
-        - 'None' : Returns a dataframe with conditional var estimated using the above 2 methods
+        - 'None' : Returns a dataframe with conditional
+                 VaR estimated using the above 2 methods
 
 
     Returns
@@ -363,7 +387,8 @@ def conditional_VaR(return_series, level, VaR_method=None):
         bool_mask = return_series < -hist_var
         return -return_series[bool_mask].mean()
     else:
-        print('Warning:\nVaR Method not provided or not valid; returning pd.DataFrame with cVaR using Guassian & Historic method')
+        print('Warning:\nVaR Method not provided or not valid;\
+             returning pd.DataFrame with cVaR using Guassian & Historic method')
         var_normal = Gaussian_VaR(return_series=return_series,
                                   level=level)
         bool_mask1 = return_series < -var_normal
@@ -379,14 +404,16 @@ def conditional_VaR(return_series, level, VaR_method=None):
 
 
 def portfolio_returns(weights: np.array, return_series):
-    """Computes the periodic portfolio returns for a given return series and weights
+    """Computes the periodic portfolio returns
+    for a given return series and weights
 
     Parameters
     ----------
     return_series : [type]
         [description]
     weights : np.array
-        Portfolio weights in the same as the returns are arranged for assets in the return_series
+        Portfolio weights in the same order as the returns
+        are arranged for assets in the return_series
 
     Returns
     -------
@@ -398,7 +425,8 @@ def portfolio_returns(weights: np.array, return_series):
 
 
 def portfolio_volatility(weights: np.array, return_series):
-    """Computes the periodic volatility of the portfolio with given weights and the historical covariance
+    """Computes the periodic volatility of the portfolio
+    with given weights and the historical covariance
     matrix for the return_series
 
     Parameters
@@ -412,8 +440,10 @@ def portfolio_volatility(weights: np.array, return_series):
     -------
     float
         periodic portfolio volatility.
-        For the future clueless me: by periodic volatility I mean volatility for the return
-        series over the periodicity of the passed in return series. i.e, if return_series is
+
+        # ? For the future clueless me:
+        by periodic volatility I mean volatility for the return series over
+        the periodicity of the passed in return series. i.e, if return_series is
         monthly, then the returned portfolio volatilty will be monthly.
     """
     pvar = weights.transpose() @ return_series.cov() @ weights
@@ -422,8 +452,7 @@ def portfolio_volatility(weights: np.array, return_series):
 
 def minimum_volatility_weights(annualized_target_return: float,
                                return_series: pd.DataFrame,
-                               allow_shorts=False,
-                               long_short=False):
+                               allow_shorts=False):
     """Returns the portfolio weights that minimimzes the portfolio volatility for a
     given level of annualized return
 
@@ -457,7 +486,8 @@ def minimum_volatility_weights(annualized_target_return: float,
 
     # * set initial guess to start the optimization
     # todo add option to allow shorts and leverage
-    initial_weights = np.repeat(a=1, repeats=num_of_assets)
+    initial_weights = np.repeat(a=1/num_of_assets, repeats=num_of_assets)
+    initial_weights = np.repeat(1/num_of_assets, repeats=num_of_assets)
 
     # * define weight constraint
     # todo add option to allow shorts and leverage
@@ -467,7 +497,7 @@ def minimum_volatility_weights(annualized_target_return: float,
         'fun': lambda weights: np.sum(weights) - 1
     }
 
-    def _pret(weights, return_series):
+    def helper_pret(weights, return_series):
         '''returns annualized portfolio returns for given weights'''
 
         return annualized_return(return_series=portfolio_returns(weights=weights,
@@ -477,7 +507,8 @@ def minimum_volatility_weights(annualized_target_return: float,
     target_return_eq_pret = {
         'type': 'eq',
         'args': (return_series, annualized_target_return, ),
-        'fun': lambda weights, return_series, annualized_target_return: abs(_pret(weights, return_series) - annualized_target_return)
+        'fun': lambda weights, return_series, annualized_target_return:
+                abs(helper_pret(weights, return_series) - annualized_target_return)
     }
 
     # * invoke the optimizer
@@ -490,3 +521,34 @@ def minimum_volatility_weights(annualized_target_return: float,
                                               method='SLSQP')
 
     return (optimal_weights.success, optimal_weights.x)
+
+
+def EfficientFrontier(return_series, periodicity):
+
+    min_return = annualized_return(return_series=return_series,
+                                   periodicity=periodicity).min()
+
+    max_return = annualized_return(return_series=return_series,
+                                   periodicity=periodicity).max()
+
+    target_return_vector = np.linspace(start=min_return,
+                                       stop=max_return,
+                                       num=150)
+
+    optimal_weights = [minimum_volatility_weights(
+        x, return_series)[1] for x in target_return_vector]
+
+    portfolio_return = [annualized_return(return_series=portfolio_returns(weights=w,
+                                                                          return_series=return_series),
+                                          periodicity=periodicity) for w in optimal_weights]
+
+    portfolio_vol = [portfolio_volatility(weights=w,
+                                          return_series=return_series) *
+                     volatilty_scaling_helper(return_periodicity=periodicity) for w in optimal_weights]
+
+    return (pd.DataFrame({'Returns': portfolio_return,
+                          'Volatility': portfolio_vol}),
+
+            pd.DataFrame(data=optimal_weights,
+                         index=portfolio_return,
+                         columns=return_series.columns))

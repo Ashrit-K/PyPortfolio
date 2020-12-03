@@ -57,7 +57,12 @@ class RiskReturn(object):
                                         risk_free_rates=0)
 
         self.SemiDeviation = semi_deviation(return_series=self.return_series,
-                                            periodicity=self.periodicity)
+                                            periodicity=self.periodicity,
+                                            direction=None)
+
+        self.PositiveSemiDeviation = self.SemiDeviation['Positive semi-deviation']
+
+        self.NegativeSemiDeviation = self.SemiDeviation['Negative semi-deviation']
 
         self.SortinoRatio = sortino_ratio(return_series=self.return_series,
                                           periodicity=self.periodicity,
@@ -83,7 +88,7 @@ class RiskReturn(object):
                                                          self.GaussianVaR].mean()
 
     def get_return_series(self):
-        return self.return_series
+        return self.return_series.copy(deep=True)
 
     def get_return_periodicity(self):
         return self.periodicity
@@ -101,13 +106,19 @@ class RiskReturn(object):
         return self.SortinoRatio
 
     def get_drawdown(self):
-        return self.Drawdown
+        return self.Drawdown.copy(deep=True)
 
     def get_max_drawdown(self):
         return self.MaxDrawdown
 
     def get_semi_deviation(self):
-        return self.SemiDeviation
+        return self.SemiDeviation.copy(deep=True)
+
+    def get_positive_semi_deviation(self):
+        return self.PositiveSemiDeviation
+
+    def get_negative_semi_deviation(self):
+        return self.NegativeSemiDeviation
 
     def get_var_level(self):
         return self.var_level
