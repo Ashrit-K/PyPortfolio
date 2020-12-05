@@ -5,7 +5,7 @@ class RiskReturn(object):
     """RiskReturn is an object that needs a return series and the 
     periodicity of the return series to be initialized. 
 
-    The object will be initialized with all the following attributes.
+    The object will be initialized with the following attributes.
     Attributes with any available getter and setter methods are mentioned in square braces.
     1. return_series [get]
     2. return_periodicity [get]
@@ -95,6 +95,9 @@ class RiskReturn(object):
 
     def get_annual_return(self):
         return self.AnnualizedReturns
+
+    def get_riskfree_rates(self):
+        return self.RiskFreeRates
 
     def get_annual_volatility(self):
         return self.AnnaulizedVolatility
