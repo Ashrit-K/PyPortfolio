@@ -1,4 +1,5 @@
 from RiskReturn import *
+from CoreFunctions import *
 
 
 class PyPortfolio(RiskReturn):
@@ -15,10 +16,10 @@ class PyPortfolio(RiskReturn):
             self.default_weights = np.repeat(1/n, n)
 
         # returns the portfolio returns as a RiskReturn object
-        self.portfolio_return = RiskReturn(return_series=portfolio_returns(return_series=self.return_series,
-                                                                           weights=self.default_weights),
-                                           periodicity=self.periodicity,
-                                           risk_free_rates=self.RiskFreeRates)
+        self.portfolio_RiskReturn = RiskReturn(return_series=portfolio_returns(return_series=self.return_series,
+                                                                               weights=self.default_weights),
+                                               periodicity=self.periodicity,
+                                               risk_free_rates=self.RiskFreeRates)
 
         self.portfolio_volatility = portfolio_volatility(return_series=self.return_series,
                                                          weights=self.default_weights)
@@ -29,6 +30,20 @@ class PyPortfolio(RiskReturn):
         self.efficientfrontier = self.MeanVarianceOpt[0]
 
         self.efficientfrontierweights = self.MeanVarianceOpt[1]
+
+        self.MaxSharpeWeights = maximum_sharpe_weights(
+            return_series=self.get_return_series(),
+            periodicity=self.get_return_periodicity(),
+            risk_free_rates=self.get_riskfree_rates())
+
+        self.MaxSortinoWeights = maximum_sortino_weights(
+            return_series=self.get_return_series(),
+            periodicity=self.get_return_periodicity(),
+            risk_free_rates=self.get_riskfree_rates())
+
+        self.GlobalMinVariance = global_minimum_variance(
+            return_series=self.get_return_series(),
+            periodicity=self.get_return_periodicity())
 
     def get_Portfolio_RiskReturn(self):
         return self.portfolio_return
