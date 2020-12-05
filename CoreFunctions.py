@@ -409,11 +409,11 @@ def portfolio_returns(weights: np.array, return_series):
 
     Parameters
     ----------
-    return_series : [type]
-        [description]
     weights : np.array
         Portfolio weights in the same order as the returns
         are arranged for assets in the return_series
+    return_series : pd.Series, pd.DataFrame
+        Periodic returns for an asset or a portfolio
 
     Returns
     -------
@@ -431,10 +431,11 @@ def portfolio_volatility(weights: np.array, return_series):
 
     Parameters
     ----------
+    weights : np.array
+        Portfolio weights in the same order as the returns
+        are arranged for assets in the return_series
     return_series : pd.Series, pd.DataFrame
-        [description]
-    weights : [type]
-        [description]
+        Periodic returns for an asset or a portfolio
 
     Returns
     -------
@@ -470,7 +471,7 @@ def minimum_volatility_weights(annualized_target_return: float,
 
     Returns
     -------
-    tuple
+    (str, np.array)
         a tuple with the status of the optimization and the optimal weights
     """
 
@@ -522,6 +523,201 @@ def minimum_volatility_weights(annualized_target_return: float,
     return (optimal_weights.success, optimal_weights.x)
 
 
+def maximum_sharpe_weights(return_series: pd.DataFrame,
+                           periodicity: str,
+                           risk_free_rates: pd.DataFrame = None,
+                           allow_shorts=False):
+    """Computes the weights for the maximum sharpe ratio portfolio
+
+    Parameters
+    ----------
+    return_series : pd.DataFrame
+        returns for the set of assets in a portfolio. Expects assets to be organized in
+        columns and periodic returns along the rows.
+    periodicity : str
+           Periodicity of the returns.
+           Supported periodicity: 'D' (t=252), 'W' (t=52),
+                                     'M' (t=12), 'Y' (t=1).
+    risk_free_rates : pd.DataFrame, optional
+        Applicable risk-free rates for the asset, by default None.
+    allow_shorts : bool, optional, by default False.
+
+    Returns
+    -------
+    (str, np.array)
+        tuple containing the status of the optimization and 
+        and the optimal weights that maximizes the portfolio
+        sharpe ratio.
+    """
+    num_of_assets = return_series.shape[1]
+
+    # * set bounds for the weights for all assets
+    weight_bounds = [(0, 1)] * num_of_assets
+    if allow_shorts:
+        weight_bounds = [(-1, 1)] * num_of_assets
+
+    # * set bounds for the weights for all assets
+    weight_bounds = [(0, 1)] * num_of_assets
+
+    # * set initial guess to start the optimization
+    # todo add option to allow shorts and leverage
+    initial_weights = np.repeat(a=1/num_of_assets, repeats=num_of_assets)
+
+    # * define weight constraint
+    # todo add option to allow shorts and leverage
+    weights_add_one = {
+        'type': 'eq',
+        'args': (),
+        'fun': lambda weights: np.sum(weights) - 1
+    }
+
+    def helper_neg_sharpe(weights, return_series, periodicity, risk_free_rates):
+        """returns negative sharpe ratio for the return series"""
+
+        pret = portfolio_returns(weights=weights, return_series=return_series)
+        return -1*sharpe_ratio(return_series=pret,
+                               periodicity=periodicity,
+                               risk_free_rates=risk_free_rates)
+
+    # * invoke the optimizer
+    optimal_weights = scipy.optimize.minimize(fun=helper_neg_sharpe,
+                                              x0=initial_weights,
+                                              args=(return_series,
+                                                    periodicity,
+                                                    risk_free_rates),
+                                              constraints=[weights_add_one],
+                                              bounds=weight_bounds,
+                                              method='SLSQP')
+
+    return (optimal_weights.success, optimal_weights.x)
+
+
+def maximum_sortino_weights(return_series: pd.DataFrame,
+                            periodicity: str,
+                            risk_free_rates: pd.DataFrame = None,
+                            allow_shorts=False):
+    """Computes the weights for the maximum sortino ratio portfolio
+
+    Parameters
+    ----------
+    return_series : pd.DataFrame
+        returns for the set of assets in a portfolio. Expects assets to be organized in
+        columns and periodic returns along the rows.
+    periodicity : str
+           Periodicity of the returns.
+           Supported periodicity: 'D' (t=252), 'W' (t=52),
+                                     'M' (t=12), 'Y' (t=1).
+    risk_free_rates : pd.DataFrame, optional
+        Applicable risk-free rates for the asset, by default None.
+    allow_shorts : bool, optional, by default False.
+
+    Returns
+    -------
+    (str, np.array)
+        tuple containing the status of the optimization and 
+        and the optimal weights that maximizes the portfolio
+        sortino ratio.
+    """
+    num_of_assets = return_series.shape[1]
+
+    # * set bounds for the weights for all assets
+    weight_bounds = [(0, 1)] * num_of_assets
+    if allow_shorts:
+        weight_bounds = [(-1, 1)] * num_of_assets
+
+    # * set bounds for the weights for all assets
+    weight_bounds = [(0, 1)] * num_of_assets
+
+    # * set initial guess to start the optimization
+    # todo add option to allow shorts and leverage
+    initial_weights = np.repeat(a=1/num_of_assets, repeats=num_of_assets)
+
+    # * define weight constraint
+    # todo add option to allow shorts and leverage
+    weights_add_one = {
+        'type': 'eq',
+        'args': (),
+        'fun': lambda weights: np.sum(weights) - 1
+    }
+
+    def helper_neg_sortino(weights, return_series, periodicity, risk_free_rates):
+        """returns negative sharpe ratio for the return series"""
+
+        pret = portfolio_returns(weights=weights, return_series=return_series)
+        return -1*sortino_ratio(return_series=pret,
+                                periodicity=periodicity,
+                                risk_free_rates=risk_free_rates)
+
+    # * invoke the optimizer
+    optimal_weights = scipy.optimize.minimize(fun=helper_neg_sortino,
+                                              x0=initial_weights,
+                                              args=(return_series,
+                                                    periodicity,
+                                                    risk_free_rates),
+                                              constraints=[weights_add_one],
+                                              bounds=weight_bounds,
+                                              method='SLSQP')
+
+    return (optimal_weights.success, optimal_weights.x)
+
+
+def global_minimum_variance(return_series: pd.DataFrame,
+                            periodicity: str,
+                            allow_shorts=False):
+    """Computes the weights for the minimum portfolio volatility
+
+    Parameters
+    ----------
+    return_series : pd.DataFrame
+        returns for the set of assets in a portfolio. Expects assets to be organized in
+        columns and periodic returns along the rows.
+    allow_shorts : bool, optional, by default False.
+
+    Returns
+    -------
+    (str, np.array)
+        tuple containing the status of the optimization and 
+        and the optimal weights that minimizes the
+        annualized portfolio volatility.
+    """
+    num_of_assets = return_series.shape[1]
+
+    # * set bounds for the weights for all assets
+    weight_bounds = [(0, 1)] * num_of_assets
+    if allow_shorts:
+        weight_bounds = [(-1, 1)] * num_of_assets
+
+    # * set bounds for the weights for all assets
+    weight_bounds = [(0, 1)] * num_of_assets
+
+    # * set initial guess to start the optimization
+    # todo add option to allow shorts and leverage
+    initial_weights = np.repeat(a=1/num_of_assets, repeats=num_of_assets)
+
+    # * define weight constraint
+    # todo add option to allow shorts and leverage
+    weights_add_one = {
+        'type': 'eq',
+        'args': (),
+        'fun': lambda weights: np.sum(weights) - 1
+    }
+
+    def pvol_helper(weights, return_series, periodicity):
+        return portfolio_volatility(weights, return_series) * \
+            volatilty_scaling_helper(return_periodicity=periodicity)
+
+    # * invoke the optimizer
+    optimal_weights = scipy.optimize.minimize(fun=pvol_helper,
+                                              x0=initial_weights,
+                                              args=(return_series,
+                                                    periodicity,),
+                                              constraints=[weights_add_one],
+                                              bounds=weight_bounds,
+                                              method='SLSQP')
+
+    return (optimal_weights.success, optimal_weights.x)
+
+
 def EfficientFrontier(return_series, periodicity):
     """Returns a tuple containing two pd.DataFrames:
     - the first datframe consists of portfolio returns and portfolio vol along 
@@ -531,10 +727,10 @@ def EfficientFrontier(return_series, periodicity):
 
     Parameters
     ----------
-    return_series : pd.DataFrame
+    - return_series : pd.DataFrame
         Periodic returns for the assets with which a portfolio will be constructed. 
-        Note: the returns should be periodic (either M, W, D, or Y)
-    periodicity : str
+        Note: the returns should be periodic (either M, W, D, or Y).
+    - periodicity : str
            Periodicity of the returns.
            Supported periodicity: 'D' (t=252), 'W' (t=52),
                                      'M' (t=12), 'Y' (t=1)
