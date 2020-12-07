@@ -64,6 +64,8 @@ class RiskReturn(object):
 
         self.NegativeSemiDeviation = self.SemiDeviation['Negative semi-deviation']
 
+        self.semideviationratio = self.PositiveSemiDeviation/self.NegativeSemiDeviation
+
         self.SortinoRatio = sortino_ratio(return_series=self.return_series,
                                           periodicity=self.periodicity,
                                           risk_free_rates=risk_free_rates)
@@ -122,6 +124,9 @@ class RiskReturn(object):
 
     def get_negative_semi_deviation(self):
         return self.NegativeSemiDeviation
+
+    def get_semideviation_ratio(self):
+        return self.semideviationratio
 
     def get_var_level(self):
         return self.var_level
