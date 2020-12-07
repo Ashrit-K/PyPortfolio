@@ -292,9 +292,34 @@ def sortino_ratio(return_series, periodicity, risk_free_rates=None):
     return annualized_excess_returns/semi_dev
 
 
-def calmar_ratio(return_series, periodicity, risk_free_rates=None):
-    raise NotImplementedError
-    # ? do I need this ?
+def semi_deviation_ratio(return_series, periodicity: str):
+    """computes the ratio of positive semi-deviation to negative semi-deviation
+    for a given asset(s), portfolio.
+
+    Parameters
+    ----------
+    return_series : pd.Series, pd.DataFrame
+        return series for the asset or the portfolio.
+    periodicity : str
+           Periodicity of the returns.
+           Supported periodicity: 'D' (t=252), 'W' (t=52),
+                                     'M' (t=12), 'Y' (t=1)
+
+    Returns
+    -------
+    float, pd.DataFrame
+        returns the semi-deviation ratio see above for definition of the
+        ratio for the assets or the portfolio.
+    """
+
+    positive_semi_dev = semi_deviation(return_series=return_series,
+                                       periodicity=periodicity,
+                                       direction='up')
+
+    negative_semi_dev = semi_deviation(return_series=return_series,
+                                       periodicity=periodicity,
+                                       direction='down')
+    return positive_semi_dev/negative_semi_dev
 
 
 def historic_VaR(return_series, level):
@@ -671,6 +696,10 @@ def global_minimum_variance(return_series: pd.DataFrame,
     return_series : pd.DataFrame
         returns for the set of assets in a portfolio. Expects assets to be organized in
         columns and periodic returns along the rows.
+    periodicity : str
+           Periodicity of the returns.
+           Supported periodicity: 'D' (t=252), 'W' (t=52),
+                                     'M' (t=12), 'Y' (t=1)
     allow_shorts : bool, optional, by default False.
 
     Returns
@@ -708,6 +737,71 @@ def global_minimum_variance(return_series: pd.DataFrame,
 
     # * invoke the optimizer
     optimal_weights = scipy.optimize.minimize(fun=pvol_helper,
+                                              x0=initial_weights,
+                                              args=(return_series,
+                                                    periodicity,),
+                                              constraints=[weights_add_one],
+                                              bounds=weight_bounds,
+                                              method='SLSQP')
+
+    return (optimal_weights.success, optimal_weights.x)
+
+
+def maximum_semideviation_ratio(return_series: pd.DataFrame,
+                                periodicity: str,
+                                allow_shorts=False):
+    """Computes the weights that maximzed portfolio semi-deviation.
+    Semi-deviation ratio is the ratio of positive semi-deviation to 
+    negative semi-deviation.
+
+    Parameters
+    ----------
+    return_series : pd.Series, pd.DataFrame
+        returns for the set of assets in a portfolio. Expects assets to be organized in
+        columns and periodic returns along the rows.
+    periodicity : str
+           Periodicity of the returns.
+           Supported periodicity: 'D' (t=252), 'W' (t=52),
+                                     'M' (t=12), 'Y' (t=1)
+    allow_shorts : bool, optional, by default False.
+
+    Returns
+    -------
+    (str, np.array)
+        tuple containing the status of the optimization 
+        and the optimal weights that maximizes the
+        semi-deviation ratio of portfolio.
+    """
+    num_of_assets = return_series.shape[1]
+
+    # * set bounds for the weights for all assets
+    weight_bounds = [(0, 1)] * num_of_assets
+    if allow_shorts:
+        weight_bounds = [(-1, 1)] * num_of_assets
+
+    # * set bounds for the weights for all assets
+    weight_bounds = [(0, 1)] * num_of_assets
+
+    # * set initial guess to start the optimization
+    # todo add option to allow shorts and leverage
+    initial_weights = np.repeat(a=1/num_of_assets, repeats=num_of_assets)
+
+    # * define weight constraint
+    # todo add option to allow shorts and leverage
+    weights_add_one = {
+        'type': 'eq',
+        'args': (),
+        'fun': lambda weights: np.sum(weights) - 1
+    }
+
+    def semidevratio_helper(weights, return_series, periodicity):
+        pret = portfolio_returns(weights, return_series)
+
+        return -1 * semi_deviation_ratio(return_series=pret,
+                                         periodicity=periodicity)
+
+    # * invoke the optimizer
+    optimal_weights = scipy.optimize.minimize(fun=semidevratio_helper,
                                               x0=initial_weights,
                                               args=(return_series,
                                                     periodicity,),
