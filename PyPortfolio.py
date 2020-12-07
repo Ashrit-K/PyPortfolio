@@ -45,5 +45,8 @@ class PyPortfolio(RiskReturn):
             return_series=self.get_return_series(),
             periodicity=self.get_return_periodicity())
 
+        self.MaxSemideviationWeights = maximum_semideviation_ratio(return_series=self.get_return_series(),
+                                                                   periodicity=self.get_return_periodicity())
+
     def get_Portfolio_RiskReturn(self):
         return self.portfolio_return
