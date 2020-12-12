@@ -66,13 +66,21 @@ class RiskReturn(object):
 
         self.semideviationratio = self.PositiveSemiDeviation/self.NegativeSemiDeviation
 
-        self.skew = pd.DataFrame(data=scipy.stats.skew(self.return_series),
-                                 columns=['Skew'],
-                                 index=self.return_series.columns)
+        if isinstance(self.return_series, pd.Series):
+            self.skew = pd.Series(data=scipy.stats.skew(self.return_series),
+                                  index=[self.return_series.name])
 
-        self.excesskurtosis = pd.DataFrame(data=scipy.stats.kurtosis(self.return_series),
-                                           columns=['Excess Kurtosis'],
-                                           index=self.return_series.columns)
+            self.excesskurtosis = pd.Series(data=scipy.stats.kurtosis(self.return_series),
+                                            index=[self.return_series.name])
+
+        if isinstance(self.return_series, pd.DataFrame):
+            self.skew = pd.Series(data=scipy.stats.skew(self.return_series),
+                                  columns=['Skew'],
+                                  index=self.return_series.columns)
+
+            self.excesskurtosis = pd.DataFrame(data=scipy.stats.kurtosis(self.return_series),
+                                               columns=['Excess Kurtosis'],
+                                               index=self.return_series.columns)
 
         self.SortinoRatio = sortino_ratio(return_series=self.return_series,
                                           periodicity=self.periodicity,
