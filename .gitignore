@@ -1,3 +1,4 @@
+*.pdf
 __pycache__
 .ipynb_checkpoints/
 basic-usage-of-Tiingo-with-pandas.ipynb
