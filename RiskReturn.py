@@ -2,8 +2,8 @@ from CoreFunctions import *
 
 
 class RiskReturn(object):
-    """RiskReturn is an object that needs a return series and the 
-    periodicity of the return series to be initialized. 
+    """RiskReturn is an object that needs a return series and the
+    periodicity of the return series to be initialized.
 
     The object will be initialized with the following attributes.
     Attributes with any available getter and setter methods are mentioned in square braces.
@@ -66,6 +66,14 @@ class RiskReturn(object):
 
         self.semideviationratio = self.PositiveSemiDeviation/self.NegativeSemiDeviation
 
+        self.skew = pd.DataFrame(data=scipy.stats.skew(self.return_series),
+                                 columns=['Skew'],
+                                 index=self.return_series.columns)
+
+        self.excesskurtosis = pd.DataFrame(data=scipy.stats.kurtosis(self.return_series),
+                                           columns=['Excess Kurtosis'],
+                                           index=self.return_series.columns)
+
         self.SortinoRatio = sortino_ratio(return_series=self.return_series,
                                           periodicity=self.periodicity,
                                           risk_free_rates=risk_free_rates)
@@ -79,8 +87,8 @@ class RiskReturn(object):
                                         level=self.var_level)
 
         # todo index is set to 0 when passing scalars
-        self.ConditionalVaR = pd.DataFrame({'Historic Conditional VaR': [self.HistoricVaR],
-                                            'Guassian Conditional VaR': [self.GaussianVaR]},
+        self.ConditionalVaR = pd.DataFrame(data={'Historic Conditional VaR': [self.HistoricVaR],
+                                                 'Guassian Conditional VaR': [self.GaussianVaR]},
                                            index=None)
 
         self.ConditionalHistoricVaR = self.return_series[self.return_series < -
@@ -90,24 +98,67 @@ class RiskReturn(object):
                                                          self.GaussianVaR].mean()
 
     def get_return_series(self):
+        """returns the pd.Series or pd.DataFrame that was used to
+        initialize the RiskReturn object.
+
+        Returns
+        -------
+        pd.DataFrame or pd.Series
+            periodic return series for the asset(s)
+        """
         return self.return_series.copy(deep=True)
 
     def get_return_periodicity(self):
+        """Periodicity of the return series.
+        Supported periodicity: {"D": Daily, "W": Weekly,
+                                 "M": Monthly, "Y": Yearly}.
+
+        Returns
+        -------
+        str
+            periodicity of the return series of the asset(s) or porfolio.
+        """
         return self.periodicity
 
     def get_annual_return(self):
+        """computes the annaulized return from the periodic returns
+        for the assets(s) or portfolio
+
+        Returns
+        -------
+        pd.Dataframe or float
+        """
         return self.AnnualizedReturns
 
     def get_riskfree_rates(self):
         return self.RiskFreeRates
 
     def get_annual_volatility(self):
+        """computes the annaulized volatility from the periodic return
+        volatility for the assets(s) or portfolio
+
+        Returns
+        -------
+        pd.Dataframe or float
+        """
         return self.AnnaulizedVolatility
 
     def get_sharpe_ratio(self):
+        """returns the annaulized Sharpe ratio for the asset(s) or portfolio.
+
+        Returns
+        -------
+        float or pd.DataFrame
+        """
         return self.SharpeRatio
 
     def get_sortino_ratio(self):
+        """returns the annaulized Sharpe ratio for the asset(s) or portfolio.
+
+        Returns
+        -------
+        float or pd.DataFrame
+        """
         return self.SortinoRatio
 
     def get_drawdown(self):
