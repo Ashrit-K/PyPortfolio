@@ -446,6 +446,7 @@ def portfolio_returns(weights: np.array, return_series):
         return series of the portfolio
     """
     pr = weights @ return_series.transpose()
+    pr.name = 'Portfolio Return'
     return pr
 
 
