@@ -687,9 +687,9 @@ def maximum_sortino_weights(return_series: pd.DataFrame,
     return (optimal_weights.success, optimal_weights.x)
 
 
-def global_minimum_variance(return_series: pd.DataFrame,
-                            periodicity: str,
-                            allow_shorts=False):
+def global_minimum_variance_weights(return_series: pd.DataFrame,
+                                    periodicity: str,
+                                    allow_shorts=False):
     """Computes the weights for the minimum portfolio volatility
 
     Parameters
@@ -748,9 +748,9 @@ def global_minimum_variance(return_series: pd.DataFrame,
     return (optimal_weights.success, optimal_weights.x)
 
 
-def maximum_semideviation_ratio(return_series: pd.DataFrame,
-                                periodicity: str,
-                                allow_shorts=False):
+def maximum_semideviation_ratio_weights(return_series: pd.DataFrame,
+                                        periodicity: str,
+                                        allow_shorts=False):
     """Computes the weights that maximzed portfolio semi-deviation.
     Semi-deviation ratio is the ratio of positive semi-deviation to 
     negative semi-deviation.
