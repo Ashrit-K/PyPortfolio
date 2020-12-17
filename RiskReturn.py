@@ -68,15 +68,17 @@ class RiskReturn(object):
 
         if isinstance(self.return_series, pd.Series):
             self.skew = pd.Series(data=scipy.stats.skew(self.return_series),
-                                  index=[self.return_series.name])
+                                  index=[self.return_series.name],
+                                  name="Skew")
 
             self.excesskurtosis = pd.Series(data=scipy.stats.kurtosis(self.return_series),
-                                            index=[self.return_series.name])
+                                            index=[self.return_series.name],
+                                            name="Kurtosis")
 
         if isinstance(self.return_series, pd.DataFrame):
-            self.skew = pd.Series(data=scipy.stats.skew(self.return_series),
-                                  columns=['Skew'],
-                                  index=self.return_series.columns)
+            self.skew = pd.DataFrame(data=scipy.stats.skew(self.return_series),
+                                     columns=['Skew'],
+                                     index=self.return_series.columns)
 
             self.excesskurtosis = pd.DataFrame(data=scipy.stats.kurtosis(self.return_series),
                                                columns=['Excess Kurtosis'],
@@ -160,6 +162,30 @@ class RiskReturn(object):
         """
         return self.SharpeRatio
 
+    # ? think about implementation of class methods like this.
+    def sortino_ratio(self):
+        """Computes the annulized Sortino Ratio of asset periodic return series.
+        Sortino ratio is computed as the ratio of the excess returns over a risk-free
+        rate to the semi-devition
+
+        Returns
+        -------
+        float, pd.DataFrame
+            Annulized Sortino Ratio of the return series
+        """
+
+        if self.RiskFreeRates == None:
+            self.RiskFreeRates = 0
+
+        excess_returns = self.return_series - self.RiskFreeRates
+        annualized_excess_returns = annualized_return(return_series=excess_returns,
+                                                      periodicity=periodicity)
+        semi_dev = semi_deviation(return_series=return_series,
+                                  periodicity=periodicity,
+                                  direction='down')
+
+        return annualized_excess_returns/semi_dev
+
     def get_sortino_ratio(self):
         """returns the annaulized Sharpe ratio for the asset(s) or portfolio.
 
@@ -170,18 +196,49 @@ class RiskReturn(object):
         return self.SortinoRatio
 
     def get_drawdown(self):
+        """returns the time-series of the drawdown for the asset(s) or portfolio.
+
+        Returns
+        -------
+        float or pd.DataFrame
+        """
         return self.Drawdown.copy(deep=True)
 
     def get_max_drawdown(self):
+        """return the worst drawdown for the asset(s) or portfolio.
+
+        Returns
+        -------
+       float or pd.DataFrame
+        """
         return self.MaxDrawdown
 
     def get_semi_deviation(self):
+        """Returns the dataframe with the positive and negative semi-deviation
+        of the asset(s) or portfolio.
+
+        Returns
+        -------
+        pd.DataFrame
+        """
         return self.SemiDeviation.copy(deep=True)
 
     def get_positive_semi_deviation(self):
+        """Returns the positive semi-deviation of the asset(s) or portfolio.
+
+        Returns
+        -------
+        float, pd.DataFrame
+        """
         return self.PositiveSemiDeviation
 
     def get_negative_semi_deviation(self):
+        """Returns the negative semi-deviation of the asset(s) or portfolio.
+
+        Returns
+        -------
+        float, pd.DataFrame
+        """
         return self.NegativeSemiDeviation
 
     def get_semideviation_ratio(self):
@@ -206,6 +263,13 @@ class RiskReturn(object):
         return self.ConditionalGuassianVaR
 
     def get_dollar_index(self):
+        """Returns the value of a dollar compounded at the
+        rate of return of the asset(s) or portfolio.
+
+        Returns
+        -------
+        pd.Series
+        """
         return self.dollar_index
 
     def get_dollar_index_startvalue(self):
