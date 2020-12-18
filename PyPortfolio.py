@@ -1,6 +1,5 @@
 from RiskReturn import *
 from CoreFunctions import *
-plt.style.use('ggplot')
 
 
 class PyPortfolio(RiskReturn):
